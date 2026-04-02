@@ -2,7 +2,7 @@ import React from "react";
 
 // Admin Imports
 import MainDashboard from "views/admin/default";
-import Profile from "views/admin/profile";
+// import Profile from "views/admin/profile";
 import DataTables from "views/admin/tables";
 import AllUsers from "views/admin/users/AllUsers";
 import ServiceUsers from "views/admin/users/ServiceUsers";
@@ -21,12 +21,8 @@ import {
   MdPerson,
   MdLock,
   MdBusiness,
-  MdAssignment,
   MdPayments,
-  MdReportProblem,
   MdRateReview,
-  MdAnalytics,
-  MdSettings,
   MdPeopleOutline,
   MdLogout,
 } from "react-icons/md";

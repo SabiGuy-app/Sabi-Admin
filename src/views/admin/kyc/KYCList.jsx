@@ -108,7 +108,7 @@ const KYCList = () => {
     fetchProviders();
   }, [currentPage]);
 
-  const getFilteredData = () => {
+  const displayData = useMemo(() => {
     switch (activeTab) {
       case "verified":
         return allProviders.filter((p) => p.kycVerified);
@@ -120,13 +120,7 @@ const KYCList = () => {
       default:
         return allProviders;
     }
-  };
-
-  const displayData = useMemo(
-    () => getFilteredData(),
-    [activeTab, allProviders]
-  );
-  const pageData = useMemo(() => displayData, [displayData]);
+  }, [activeTab, allProviders]);  const pageData = useMemo(() => displayData, [displayData]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -401,3 +395,4 @@ const KYCList = () => {
 };
 
 export default KYCList;
+

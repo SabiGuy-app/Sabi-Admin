@@ -1,4 +1,4 @@
-import MiniCalendar from "components/calendar/MiniCalendar";
+// import MiniCalendar from "components/calendar/MiniCalendar";
 import WeeklyRevenue from "views/admin/default/components/WeeklyRevenue";
 import TotalSpent from "views/admin/default/components/TotalSpent";
 import {
@@ -6,7 +6,6 @@ import {
   MdDashboard,
   MdPerson,
   MdAttachMoney,
-  MdStar,
 } from "react-icons/md";
 import { useState, useEffect } from "react";
 import Widget from "components/widget/Widget";
@@ -69,6 +68,11 @@ const Dashboard = () => {
               : `₦${(stats?.revenue?.total || 0).toLocaleString()}`
           }
         />
+        {error && (
+          <div className="col-span-full rounded-lg bg-red-100 p-4">
+            <p className="text-red-700">Error: {error}</p>
+          </div>
+        )}
         {/* <Widget
           icon={<MdStar className="h-7 w-7" />}
           title={"Last 30 Days Revenue"}

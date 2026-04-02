@@ -91,16 +91,16 @@ const ServiceUsers = () => {
     }
   };
 
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case "Service Provider":
-        return "bg-brand-100 text-brand-700";
-      case "Service User":
-        return "bg-blue-100 text-blue-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
+  // const getRoleBadgeColor = (role) => {
+  //   switch (role) {
+  //     case "Service Provider":
+  //       return "bg-brand-100 text-brand-700";
+  //     case "Service User":
+  //       return "bg-blue-100 text-blue-700";
+  //     default:
+  //       return "bg-gray-100 text-gray-700";
+  //   }
+  // };
 
   const handleViewDetails = (user) => {
     navigate(`/admin/user-details/${user.id}`, { state: { user } });
