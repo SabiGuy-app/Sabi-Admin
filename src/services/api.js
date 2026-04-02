@@ -287,7 +287,7 @@ export const bookingsAPI = {
   cancelBooking: (bookingId) => apiDelete(`/bookings/${bookingId}`),
 };
 
-export default {
+const apiService = {
   apiGet,
   apiPost,
   apiPut,
@@ -301,3 +301,6 @@ export default {
   transactionsAPI,
   bookingsAPI,
 };
+
+export default apiService;
+

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "components/card";
 import { MdModeEditOutline, MdLocalShipping } from "react-icons/md";
@@ -138,18 +138,9 @@ const AllBookings = () => {
     return statusColors[status] || "bg-gray-100 text-gray-700";
   };
 
-  const getProviderResponseColor = (response) => {
-    const colors = {
-      pending: "bg-gray-100 text-gray-700",
-      accepted: "bg-green-100 text-green-700",
-      rejected: "bg-red-100 text-red-700",
-    };
     return colors[response] || "bg-gray-100 text-gray-700";
   };
 
-  const handleViewDetails = (booking) => {
-    navigate(`/admin/booking-details/${booking.id}`, { state: { booking } });
-  };
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -437,3 +428,4 @@ const AllBookings = () => {
 };
 
 export default AllBookings;
+
