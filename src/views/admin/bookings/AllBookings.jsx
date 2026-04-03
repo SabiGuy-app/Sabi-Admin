@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Card from "components/card";
-import { MdModeEditOutline, MdLocalShipping } from "react-icons/md";
+import {  MdLocalShipping } from "react-icons/md";
 import { bookingsAPI } from "services/api";
 
 const AllBookings = () => {
-  const navigate = useNavigate();
   const [allBookings, setAllBookings] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
