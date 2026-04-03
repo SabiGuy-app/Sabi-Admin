@@ -138,8 +138,6 @@ const AllBookings = () => {
     return statusColors[status] || "bg-gray-100 text-gray-700";
   };
 
-    return colors[response] || "bg-gray-100 text-gray-700";
-  };
 
 
   const handleSort = (field) => {
