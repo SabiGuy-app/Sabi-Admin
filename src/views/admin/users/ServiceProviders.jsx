@@ -74,7 +74,7 @@ const ServiceProviders = () => {
             kycCompleted: user.kycCompleted,
             kycLevel: user.kycLevel,
             kycVerified: user.kycVerified,
-             totalBookings: user.bookingsCount || 0,
+            totalBookings: user.bookingsCount || 0,
 
           }));
 

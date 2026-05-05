@@ -8,6 +8,7 @@ import {
   MdLocationOn,
   MdPhone,
   MdVerified,
+  MdAssignment,
 } from "react-icons/md";
 import Card from "components/card";
 
@@ -249,6 +250,31 @@ const UserDetails = () => {
 
             <Card extra="w-full p-6">
               <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-300">
+                  <MdAssignment className="h-5 w-5" />
+                </div>
+                <h3 className="text-lg font-bold text-navy-700 dark:text-white">
+                  Bookings
+                </h3>
+              </div>
+              <p className="mb-4 text-sm text-gray-700 dark:text-gray-300">
+                View all bookings assigned to this provider.
+              </p>
+              <button
+                onClick={() =>
+                  navigate(`/admin/provider-bookings/${user.id}`, {
+                    state: { provider: user },
+                  })
+                }
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-brand-600"
+              >
+                <MdAssignment className="h-4 w-4" />
+                View Bookings
+              </button>
+            </Card>
+
+            <Card extra="w-full p-6">
+              <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-300">
                   <MdBadge className="h-5 w-5" />
                 </div>
@@ -410,6 +436,33 @@ const UserDetails = () => {
               </div>
             </Card>
           </>
+        )}
+
+        {!isProvider && (
+          <Card extra="w-full p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-300">
+                <MdAssignment className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-navy-700 dark:text-white">
+                Bookings
+              </h3>
+            </div>
+            <p className="mb-4 text-sm text-gray-700 dark:text-gray-300">
+              View all bookings created by this user.
+            </p>
+            <button
+              onClick={() =>
+                navigate(`/admin/user-bookings/${user.id}`, {
+                  state: { user },
+                })
+              }
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-brand-600"
+            >
+              <MdAssignment className="h-4 w-4" />
+              View Bookings
+            </button>
+          </Card>
         )}
       </div>
     </div>

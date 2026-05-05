@@ -4,6 +4,7 @@ import { HiX } from "react-icons/hi";
 import Links from "./components/Links";
 import routes from "routes.js";
 import logo from "assets/img/dashboards/logo.jpg"
+import newLogo from "assets/img/dashboards/newLogo.png"
 
 const Sidebar = ({ open, onClose }) => {
   return (
@@ -21,7 +22,7 @@ const Sidebar = ({ open, onClose }) => {
 
       <div className={`mx-[56px] mt-[50px] flex items-center`}>
         <img
-          src={logo}
+          src={newLogo}
           alt="SabiGuy Admin Logo"
           className="h-10 w-auto object-contain"
         />

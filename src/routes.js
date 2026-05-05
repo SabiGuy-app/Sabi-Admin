@@ -8,6 +8,9 @@ import AllUsers from "views/admin/users/AllUsers";
 import ServiceUsers from "views/admin/users/ServiceUsers";
 import ServiceProviders from "views/admin/users/ServiceProviders";
 import AllBookings from "views/admin/bookings/AllBookings";
+import BookingDetails from "views/admin/bookings/BookingDetails";
+import ProviderBookings from "views/admin/bookings/ProviderBookings";
+import PlatformFeePage from "views/admin/platform-fee";
 import KYCList from "views/admin/kyc/KYCList";
 import KYCPage from "views/admin/kyc/kyc";
 
@@ -21,6 +24,7 @@ import {
   MdPerson,
   MdLock,
   MdBusiness,
+  MdAccountBalanceWallet,
   MdPayments,
   MdRateReview,
   MdPeopleOutline,
@@ -70,6 +74,37 @@ const routes = [
     path: "bookings",
     icon: <MdPayments className="h-6 w-6" />,
     component: <AllBookings />,
+  },
+  {
+    name: "Platform Fee",
+    layout: "/admin",
+    path: "platform-fee",
+    icon: <MdAccountBalanceWallet className="h-6 w-6" />,
+    component: <PlatformFeePage />,
+  },
+  {
+    name: "Booking Details",
+    layout: "/admin",
+    path: "booking-details/:id",
+    icon: <MdPayments className="h-6 w-6" />,
+    component: <BookingDetails />,
+    invisible: true,
+  },
+  {
+    name: "Provider Bookings",
+    layout: "/admin",
+    path: "provider-bookings/:id",
+    icon: <MdPayments className="h-6 w-6" />,
+    component: <ProviderBookings />,
+    invisible: true,
+  },
+  {
+    name: "User Bookings",
+    layout: "/admin",
+    path: "user-bookings/:id",
+    icon: <MdPayments className="h-6 w-6" />,
+    component: <ProviderBookings />,
+    invisible: true,
   },
   // {
   //   name: "Disputes & Support",

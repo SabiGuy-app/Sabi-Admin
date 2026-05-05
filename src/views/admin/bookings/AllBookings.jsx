@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Card from "components/card";
-import {  MdLocalShipping } from "react-icons/md";
+import { MdDirectionsCar, MdLocalShipping } from "react-icons/md";
 import { bookingsAPI } from "services/api";
 
 const AllBookings = () => {
+  const navigate = useNavigate();
   const [allBookings, setAllBookings] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -136,6 +138,12 @@ const AllBookings = () => {
     return statusColors[status] || "bg-gray-100 text-gray-700";
   };
 
+  const handleViewDetails = (booking) => {
+    navigate(`/admin/booking-details/${booking.id}`, {
+      state: { booking: booking.rawData },
+    });
+  };
+
 
 
   const handleSort = (field) => {
@@ -181,7 +189,7 @@ const AllBookings = () => {
       <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
         <div className="text-sm">
           <p className="font-medium text-navy-700 dark:text-white">
-            ₦{booking.agreedPrice.toLocaleString()}
+            ₦{booking.agreedPrice || 0}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Mode: {booking.modeOfDelivery}
@@ -213,13 +221,15 @@ const AllBookings = () => {
         <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
           {booking.createdAt}
         </p>
-        {/* <button
+      </td>
+      <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
+        <button
           onClick={() => handleViewDetails(booking)}
-          className="flex items-center gap-1 text-sm font-medium text-brand-500 transition-colors hover:text-brand-600 hover:underline"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-600"
         >
-          <MdModeEditOutline className="h-4 w-4" />
-          Details
-        </button> */}
+          <MdDirectionsCar className="h-4 w-4" />
+          View Details
+        </button>
       </td>
     </tr>
   );
@@ -355,6 +365,11 @@ const AllBookings = () => {
                         <SortIcon field="createdAt" />
                       </button>
                     </th>
+                    <th className="border-b border-gray-200 px-4 py-4 text-left dark:border-gray-700">
+                      <p className="text-sm font-bold text-navy-700 dark:text-white">
+                        Action
+                      </p>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -364,7 +379,7 @@ const AllBookings = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="py-8 text-center">
+                      <td colSpan="8" className="py-8 text-center">
                         <p className="text-gray-600 dark:text-gray-400">
                           No bookings found
                         </p>

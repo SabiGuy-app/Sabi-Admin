@@ -189,6 +189,12 @@ export const dashboardAPI = {
   // Get dashboard metrics
   getDashboardMetrics: (timeRange = "30d") =>
     apiGet(`/admin/dashboard/metrics?timeRange=${timeRange}`),
+
+  // Get platform fee report
+  getPlatformFeeReport: () => apiGet("/admin/platform-fee-report"),
+
+  // Get platform balance
+  getPlatformBalance: () => apiGet("/admin/platform-balance"),
 };
 
 /**
@@ -276,6 +282,13 @@ export const bookingsAPI = {
 
   // Get booking by ID
   getBookingById: (bookingId) => apiGet(`/bookings/${bookingId}`),
+
+  // Get bookings for a specific user
+  getBookingsByUserId: (userId) => apiGet(`/bookings/user/${userId}`),
+
+  // Get bookings for a specific provider
+  getBookingsByProviderId: (providerId) =>
+    apiGet(`/bookings/provider/${providerId}`),
 
   // Create booking
   createBooking: (data) => apiPost("/bookings", data),
