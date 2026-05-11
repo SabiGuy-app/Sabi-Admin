@@ -219,7 +219,7 @@ export const kycAPI = {
 
   // Reject KYC for a provider
   rejectProviderKYC: (providerId, reason) =>
-    apiPost(`/providers/${providerId}/kyc/reject`, { reason }),
+    apiPatch(`/admin/providers/${providerId}/kyc/dispute`, { reason }),
 };
 
 /**
