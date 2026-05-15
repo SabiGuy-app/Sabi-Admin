@@ -166,7 +166,7 @@ export const userAPI = {
 export const authAPI = {
   signIn: (email, password) => apiPost("/auth/signin", { email, password }),
 
-  signUp: (data) => apiPost("/auth/signup", data),
+  signUp: (data) => apiPost("/", data),
 
   logout: () => apiPost("/auth/logout", {}),
 

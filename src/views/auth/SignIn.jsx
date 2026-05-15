@@ -281,7 +281,7 @@ export default function SignIn() {
         {/* Toggle Sign In / Sign Up */}
         <div className="mt-4">
           <span className="text-sm font-medium text-navy-700 dark:text-gray-600">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}
+            {/* {isSignUp ? "Already have an account?" : "Sabi"} */}
           </span>
           <button
             onClick={() => {
@@ -291,9 +291,11 @@ export default function SignIn() {
               setSuccess(false);
               setPasswordError("");
             }}
-            className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-white"
+            className="ml-1 text-sm font-medium  dark:text-white"
           >
-            {isSignUp ? "Sign In" : "Create Admin Account"}
+            {/* {isSignUp ? "Sign In" : "Create Admin Account"} */}
+          {/* {isSignUp ? "Sign In" : 'Guy'} */}
+
           </button>
         </div>
       </div>

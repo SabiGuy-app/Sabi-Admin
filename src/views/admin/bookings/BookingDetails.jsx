@@ -97,7 +97,7 @@ const BookingDetails = () => {
   const provider = booking?.providerId || {};
   const pickup = booking?.pickupLocation || {};
   const dropoff = booking?.dropoffLocation || {};
-  const pricing = booking?.pricing || booking?.pricingBreakdown || {};
+  const pricingBreakdown = booking?.pricingBreakdown || booking?.pricing?.breakdown || {};
   const breakdown = booking?.pricing?.breakdown || booking?.pricingBreakdown || {};
   const meta = booking?.pricing?.meta || booking?.pricingMeta || {};
   const payment = booking?.payment || {};
@@ -351,32 +351,68 @@ const BookingDetails = () => {
           </div>
         </Card>
 
-        <Card extra="w-full p-6">
+        <Card extra="w-full p-6 md:col-span-2 xl:col-span-3">
           <SectionTitle
             icon={MdPayments}
             title="Pricing"
             subtitle="Final rider and driver amounts"
           />
-          <div className="space-y-3 text-sm">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <DetailRow
-              label="Rider Pays"
-              value={formatCurrency(pricing?.riderPays || pricing?.riderPaysFinal)}
+              label="Base Fare"
+              value={formatCurrency(pricingBreakdown?.baseFare)}
+            />
+            <DetailRow
+              label="Distance Cost"
+              value={formatCurrency(pricingBreakdown?.distanceCost)}
+            />
+            <DetailRow
+              label="Time Cost"
+              value={formatCurrency(pricingBreakdown?.timeCost)}
+            />
+            <DetailRow
+              label="Market Adjustment"
+              value={formatCurrency(pricingBreakdown?.marketAdjustment)}
+            />
+            <DetailRow
+              label="Subtotal"
+              value={formatCurrency(pricingBreakdown?.subtotal)}
+            />
+            <DetailRow
+              label="Platform Fee"
+              value={formatCurrency(pricingBreakdown?.platformFee)}
+            />
+            <DetailRow
+              label="Surge Multiplier"
+              value={formatNumber(pricingBreakdown?.surgeMultiplier)}
+            />
+            <DetailRow
+              label="Pre-Surge Fare"
+              value={formatCurrency(pricingBreakdown?.preSurgeFare)}
+            />
+            <DetailRow
+              label="Rider Pays Before Tax"
+              value={formatCurrency(pricingBreakdown?.riderPaysBeforeTax)}
+            />
+            <DetailRow
+              label="Tax"
+              value={formatCurrency(pricingBreakdown?.tax)}
+            />
+            <DetailRow
+              label="Rider Pays Final"
+              value={formatCurrency(pricingBreakdown?.riderPaysFinal)}
+            />
+            <DetailRow
+              label="Driver Commission"
+              value={formatCurrency(pricingBreakdown?.driverCommission)}
             />
             <DetailRow
               label="Driver Receives"
-              value={formatCurrency(pricing?.driverReceives)}
+              value={formatCurrency(pricingBreakdown?.driverReceives)}
             />
             <DetailRow
               label="Platform Earns"
-              value={formatCurrency(pricing?.platformEarns)}
-            />
-            <DetailRow
-              label="Service Fee"
-              value={formatCurrency(booking?.serviceFee)}
-            />
-            <DetailRow
-              label="Provider Commission"
-              value={formatCurrency(booking?.providerCommission)}
+              value={formatCurrency(pricingBreakdown?.platformEarns)}
             />
           </div>
         </Card>
@@ -465,39 +501,7 @@ const BookingDetails = () => {
           </div>
         </Card>
 
-        <Card extra="w-full p-6">
-          <SectionTitle
-            icon={MdInfo}
-            title="Booking Stats"
-            subtitle="Summary values from the booking payload"
-          />
-          <div className="space-y-3 text-sm">
-            <DetailRow
-              label="Base Fare"
-              value={formatCurrency(breakdown?.baseFare)}
-            />
-            <DetailRow
-              label="Distance Cost"
-              value={formatCurrency(breakdown?.distanceCost)}
-            />
-            <DetailRow
-              label="Time Cost"
-              value={formatCurrency(breakdown?.timeCost)}
-            />
-            <DetailRow
-              label="Market Adjustment"
-              value={formatCurrency(breakdown?.marketAdjustment)}
-            />
-            <DetailRow
-              label="Subtotal"
-              value={formatCurrency(breakdown?.subtotal)}
-            />
-            <DetailRow
-              label="Tax"
-              value={formatCurrency(breakdown?.tax)}
-            />
-          </div>
-        </Card>
+       
 
         <Card extra="w-full p-6 md:col-span-2 xl:col-span-3">
           <SectionTitle
@@ -654,6 +658,8 @@ const BookingDetails = () => {
             <DetailRow label="Selected At" value={formatDateTime(booking?.selectedAt)} />
             <DetailRow label="Updated At" value={formatDateTime(booking?.updatedAt)} />
             <DetailRow label="Accepted At" value={formatDateTime(booking?.acceptedAt)} />
+            <DetailRow label="Completed At" value={formatDateTime(booking?.completedAt) || "Booking not completed"} />
+
           </div>
           {attachments.length > 0 ? (
             <div className="mt-4 space-y-3">
