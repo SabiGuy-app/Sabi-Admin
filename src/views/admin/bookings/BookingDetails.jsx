@@ -98,7 +98,7 @@ const BookingDetails = () => {
   const pickup = booking?.pickupLocation || {};
   const dropoff = booking?.dropoffLocation || {};
   const pricingBreakdown = booking?.pricingBreakdown || booking?.pricing?.breakdown || {};
-  const breakdown = booking?.pricing?.breakdown || booking?.pricingBreakdown || {};
+  // const breakdown = booking?.pricing?.breakdown || booking?.pricingBreakdown || {};
   const meta = booking?.pricing?.meta || booking?.pricingMeta || {};
   const payment = booking?.payment || {};
   const providerDistances = Array.isArray(booking?.providerDistances)
