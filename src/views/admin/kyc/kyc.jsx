@@ -14,13 +14,17 @@ import {
   MdDirectionsCar,
 } from "react-icons/md";
 import Card from "components/card";
-import { kycAPI } from "services/api";
+import { kycAPI, userAPI } from "services/api";
 
 const KYCPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
+  const queryEntityType = new URLSearchParams(location.search).get("type");
   const [provider, setProvider] = useState(null);
+  const [entityType, setEntityType] = useState(
+    location.state?.entityType || queryEntityType || "providers"
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [approving, setApproving] = useState(false);
@@ -41,17 +45,23 @@ const KYCPage = () => {
   };
 
   useEffect(() => {
-    const fetchProvider = async () => {
+    const fetchKYCSubject = async () => {
       try {
         setLoading(true);
         // Try to get from location state first
         if (location.state?.provider) {
           setProvider(location.state.provider);
+          setEntityType(
+            location.state?.entityType || queryEntityType || "providers"
+          );
           return;
         }
 
         // Otherwise fetch from API
-        const data = await kycAPI.getProviderById(id);
+        const data =
+          entityType === "users"
+            ? await userAPI.getUserById(id)
+            : await kycAPI.getProviderById(id);
         setProvider(data.data || data);
         setError(null);
       } catch (err) {
@@ -62,13 +72,19 @@ const KYCPage = () => {
       }
     };
 
-    fetchProvider();
-  }, [id, location.state]);
+    fetchKYCSubject();
+  }, [entityType, id, location.state, queryEntityType]);
+
+  const isServiceUser = entityType === "users" || provider?.role === "buyer";
 
   const handleApproveKYC = async () => {
     try {
       setApproving(true);
-      await kycAPI.verifyProviderKYC(provider._id);
+      if (isServiceUser) {
+        await kycAPI.verifyBuyerKYC(provider._id);
+      } else {
+        await kycAPI.verifyProviderKYC(provider._id);
+      }
 
       setProvider({
         ...provider,
@@ -77,7 +93,7 @@ const KYCPage = () => {
         kycVerifiedAt: new Date().toISOString(),
       });
 
-      showToast("KYC approved successfully!");
+      showToast(`${isServiceUser ? "User NIN" : "KYC"} approved successfully!`);
     } catch (err) {
       showToast(`Error approving KYC: ${err.message}`, "error");
     } finally {
@@ -131,7 +147,7 @@ const KYCPage = () => {
 
   const getKYCStatusText = () => {
     if (provider?.kycVerified) {
-      return "KYC Verified ✓";
+      return "KYC Verified";
     }
     if (provider?.kycCompleted) {
       return "KYC Pending Review";
@@ -283,18 +299,20 @@ const KYCPage = () => {
             ) : (
               <>
                 <MdCheckCircle className="h-4 w-4" />
-                Approve KYC
+                Approve {isServiceUser ? "NIN" : "KYC"}
               </>
             )}
           </button>
-          <button
-            onClick={() => setShowRejectModal(true)}
-            disabled={rejecting}
-            className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50"
-          >
-            <MdCancel className="h-4 w-4" />
-            Reject KYC
-          </button>
+          {!isServiceUser && (
+            <button
+              onClick={() => setShowRejectModal(true)}
+              disabled={rejecting}
+              className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50"
+            >
+              <MdCancel className="h-4 w-4" />
+              Reject KYC
+            </button>
+          )}
         </div>
       )}
 
@@ -370,43 +388,45 @@ const KYCPage = () => {
           </div>
         </Card>
 
-        <Card extra="w-full p-6">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 flex h-10 w-10 items-center justify-center rounded-xl">
-              <MdBadge className="h-5 w-5" />
+        {!isServiceUser && (
+          <Card extra="w-full p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 flex h-10 w-10 items-center justify-center rounded-xl">
+                <MdBadge className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-navy-700 dark:text-white">
+                Job Details
+              </h3>
             </div>
-            <h3 className="text-lg font-bold text-navy-700 dark:text-white">
-              Job Details
-            </h3>
-          </div>
-          {jobList.length > 0 ? (
-            <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-              {jobList.map((job, index) => (
-                <div
-                  key={job?._id || index}
-                  className="rounded-lg border border-gray-100 p-3 dark:border-gray-700"
-                >
-                  <p>
-                    <span className="font-medium">Service:</span>{" "}
-                    {job?.service || "Not available"}
-                  </p>
-                  <p>
-                    <span className="font-medium">Title:</span>{" "}
-                    {job?.title || "Not available"}
-                  </p>
-                  <p>
-                    <span className="font-medium">Job ID:</span>{" "}
-                    {job?._id || "Not available"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              No jobs available
-            </p>
-          )}
-        </Card>
+            {jobList.length > 0 ? (
+              <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                {jobList.map((job, index) => (
+                  <div
+                    key={job?._id || index}
+                    className="rounded-lg border border-gray-100 p-3 dark:border-gray-700"
+                  >
+                    <p>
+                      <span className="font-medium">Service:</span>{" "}
+                      {job?.service || "Not available"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Title:</span>{" "}
+                      {job?.title || "Not available"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Job ID:</span>{" "}
+                      {job?._id || "Not available"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                No jobs available
+              </p>
+            )}
+          </Card>
+        )}
 
         <Card extra="w-full p-6">
           <div className="mb-4 flex items-center gap-3">
@@ -437,34 +457,36 @@ const KYCPage = () => {
           </div>
         </Card>
 
-        <Card extra="w-full p-6">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
-              <MdBadge className="h-5 w-5" />
+        {!isServiceUser && (
+          <Card extra="w-full p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
+                <MdBadge className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-navy-700 dark:text-white">
+                Banking Information
+              </h3>
             </div>
-            <h3 className="text-lg font-bold text-navy-700 dark:text-white">
-              Banking Information
-            </h3>
-          </div>
-          <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <p>
-              <span className="font-medium">Bank Name:</span>{" "}
-              {provider.bankName || "Not provided"}
-            </p>
-            <p>
-              <span className="font-medium">Account Name:</span>{" "}
-              {provider.accountName || "Not provided"}
-            </p>
-            <p>
-              <span className="font-medium">Account Number:</span>{" "}
-              {provider.accountNumber || "Not provided"}
-            </p>
-            <p>
-              <span className="font-medium">Bank Code:</span>{" "}
-              {provider.bankCode || "Not provided"}
-            </p>
-          </div>
-        </Card>
+            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+              <p>
+                <span className="font-medium">Bank Name:</span>{" "}
+                {provider.bankName || "Not provided"}
+              </p>
+              <p>
+                <span className="font-medium">Account Name:</span>{" "}
+                {provider.accountName || "Not provided"}
+              </p>
+              <p>
+                <span className="font-medium">Account Number:</span>{" "}
+                {provider.accountNumber || "Not provided"}
+              </p>
+              <p>
+                <span className="font-medium">Bank Code:</span>{" "}
+                {provider.bankCode || "Not provided"}
+              </p>
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* Documents Section */}
@@ -499,7 +521,7 @@ const KYCPage = () => {
               </a>
               <div className="flex flex-1 flex-col justify-start gap-2 rounded-lg bg-purple-50 p-4 dark:bg-purple-900/20">
                 <p className="text-sm font-medium text-navy-700 dark:text-white">
-                  Document Status: ✓ Verified
+                  Document Status: Provided
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   Click the image to view the full document
@@ -509,12 +531,14 @@ const KYCPage = () => {
           ) : (
             <div className="rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
-                ⚠️ NIN document not uploaded
+                NIN document not uploaded
               </p>
             </div>
           )}
         </Card>
 
+        {!isServiceUser && (
+          <>
         {/* Work Visuals */}
         <Card extra="w-full p-6">
           <div className="mb-4 flex items-center gap-3">
@@ -552,7 +576,7 @@ const KYCPage = () => {
           ) : (
             <div className="rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
-                ⚠️ No work visuals uploaded
+                No work visuals uploaded
               </p>
             </div>
           )}
@@ -603,6 +627,8 @@ const KYCPage = () => {
             </div>
           </div>
         </Card>
+          </>
+        )}
       </div>
 
       {/* Reject Modal */}

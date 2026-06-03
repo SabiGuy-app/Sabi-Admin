@@ -4,9 +4,54 @@ import Card from "components/card";
 import { MdVerified, MdPending, MdCancel, MdFactCheck } from "react-icons/md";
 import { userAPI } from "services/api";
 
+const entityConfig = {
+  providers: {
+    label: "Providers",
+    singular: "provider",
+    role: "provider",
+    fetch: userAPI.getServiceProviders,
+  },
+  users: {
+    label: "Service Users",
+    singular: "user",
+    role: "buyer",
+    fetch: userAPI.getServiceUsers,
+  },
+};
+
+const getListFromResponse = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.users)) return data.users;
+  return [];
+};
+
+const getPaginationMeta = (data, count, currentPage, itemsPerPage) => {
+  const meta = data?.pagination || data?.meta || {};
+  const totalCount =
+    meta?.totalItems ??
+    meta?.total ??
+    meta?.count ??
+    data?.totalItems ??
+    data?.total ??
+    data?.count ??
+    count;
+  const totalPages =
+    meta?.totalPages ||
+    (typeof totalCount === "number" ? Math.ceil(totalCount / itemsPerPage) : 0);
+
+  return {
+    totalItems: typeof totalCount === "number" ? totalCount : 0,
+    totalPages,
+    hasNext:
+      totalPages > 0 ? currentPage < totalPages : count === itemsPerPage,
+  };
+};
+
 const KYCList = () => {
   const navigate = useNavigate();
-  const [allProviders, setAllProviders] = useState([]);
+  const [records, setRecords] = useState([]);
+  const [entityType, setEntityType] = useState("providers");
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -16,87 +61,57 @@ const KYCList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const currentEntity = entityConfig[entityType];
+
   useEffect(() => {
-    const fetchProviders = async () => {
+    const fetchKYCRecords = async () => {
       try {
         setLoading(true);
-        // Fetch providers with KYC data
-        const data = await userAPI.getServiceProviders(
+        const data = await currentEntity.fetch(currentPage, itemsPerPage);
+        const list = getListFromResponse(data).filter(
+          (item) => !currentEntity.role || item.role === currentEntity.role
+        );
+
+        const mappedRecords = list.map((record) => ({
+          id: record._id,
+          name: record.fullName || "N/A",
+          email: record.email,
+          phone: record.phoneNumber,
+          kycStatus: record.kycVerified
+            ? "verified"
+            : record.kycCompleted || record.ninSlip
+            ? "pending"
+            : "incomplete",
+          kycLevel: record.kycLevel || 0,
+          kycVerified: Boolean(record.kycVerified),
+          kycCompleted: Boolean(record.kycCompleted || record.ninSlip),
+          profilePicture: record.profilePicture,
+          createdAt: record.createdAt
+            ? new Date(record.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })
+            : "N/A",
+          rawData: record,
+        }));
+
+        const pagination = getPaginationMeta(
+          data,
+          list.length,
           currentPage,
           itemsPerPage
         );
 
-        console.log("API Response:", data);
-
-        // Handle different response structures
-        const providersArray = Array.isArray(data)
-          ? data
-          : Array.isArray(data.data)
-          ? data.data
-          : [];
-
-        console.log("Providers Array:", providersArray);
-        console.log("Providers Count:", providersArray.length);
-
-        if (providersArray.length === 0) {
-          console.log("No providers found in response");
-          setAllProviders([]);
-          return;
-        }
-
-        // Map API response to our table format
-        const mappedProviders = providersArray.map((provider) => ({
-          id: provider._id,
-          name: provider.fullName || "N/A",
-          email: provider.email,
-          phone: provider.phoneNumber,
-          kycStatus: provider.kycVerified
-            ? "verified"
-            : provider.kycCompleted
-            ? "pending"
-            : "incomplete",
-          kycLevel: provider.kycLevel || 0,
-          kycVerified: provider.kycVerified || false,
-          kycCompleted: provider.kycCompleted || false,
-          profilePicture: provider.profilePicture,
-          createdAt: new Date(provider.createdAt).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          }),
-          rawData: provider,
-        }));
-
-        console.log("Mapped Providers:", mappedProviders);
-
-        const meta = data?.pagination || data?.meta || {};
-        const totalCount =
-          meta?.totalItems ??
-          meta?.total ??
-          meta?.count ??
-          data?.totalItems ??
-          data?.total ??
-          data?.count ??
-          providersArray.length;
-        const computedTotalPages =
-          meta?.totalPages ||
-          (typeof totalCount === "number"
-            ? Math.ceil(totalCount / itemsPerPage)
-            : 0);
-
-        setAllProviders(mappedProviders);
-        setTotalItems(typeof totalCount === "number" ? totalCount : 0);
-        setTotalPages(computedTotalPages);
-        setHasNext(
-          computedTotalPages > 0
-            ? currentPage < computedTotalPages
-            : providersArray.length === itemsPerPage
-        );
+        setRecords(mappedRecords);
+        setTotalItems(pagination.totalItems);
+        setTotalPages(pagination.totalPages);
+        setHasNext(pagination.hasNext);
         setError(null);
       } catch (err) {
-        console.error("Error fetching providers:", err);
+        console.error(`Error fetching ${currentEntity.label}:`, err);
         setError(err.message);
-        setAllProviders([]);
+        setRecords([]);
         setTotalItems(0);
         setTotalPages(0);
         setHasNext(false);
@@ -105,22 +120,30 @@ const KYCList = () => {
       }
     };
 
-    fetchProviders();
-  }, [currentPage]);
+    fetchKYCRecords();
+  }, [currentEntity, currentPage]);
 
   const displayData = useMemo(() => {
     switch (activeTab) {
       case "verified":
-        return allProviders.filter((p) => p.kycVerified);
+        return records.filter((record) => record.kycVerified);
       case "pending":
-        return allProviders.filter((p) => p.kycCompleted && !p.kycVerified);
+        return records.filter(
+          (record) => record.kycCompleted && !record.kycVerified
+        );
       case "incomplete":
-        return allProviders.filter((p) => !p.kycCompleted);
+        return records.filter((record) => !record.kycCompleted);
       case "all":
       default:
-        return allProviders;
+        return records;
     }
-  }, [activeTab, allProviders]);  const pageData = useMemo(() => displayData, [displayData]);
+  }, [activeTab, records]);
+
+  const handleEntityChange = (nextEntityType) => {
+    setEntityType(nextEntityType);
+    setActiveTab("all");
+    setCurrentPage(1);
+  };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -153,65 +176,65 @@ const KYCList = () => {
     }
   };
 
-  const handleViewKYC = (provider) => {
-    navigate(`/admin/kyc-details/${provider.id}`, {
-      state: { provider: provider.rawData },
+  const handleViewKYC = (record) => {
+    navigate(`/admin/kyc-details/${record.id}?type=${entityType}`, {
+      state: { entityType, provider: record.rawData },
     });
   };
 
-  const TableRow = ({ provider }) => (
+  const TableRow = ({ record }) => (
     <tr className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/30">
       <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
         <div className="flex items-center gap-3">
           <img
             src={
-              provider.profilePicture ||
-              `https://i.pravatar.cc/150?u=${provider.email}`
+              record.profilePicture ||
+              `https://i.pravatar.cc/150?u=${record.email}`
             }
-            alt={provider.name}
+            alt={record.name}
             className="h-10 w-10 rounded-full object-cover"
           />
           <div>
             <p className="text-sm font-medium text-navy-700 dark:text-white">
-              {provider.name}
+              {record.name}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {provider.email}
+              {record.email}
             </p>
           </div>
         </div>
       </td>
       <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          {provider.phone || "N/A"}
+          {record.phone || "N/A"}
         </p>
       </td>
       <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
         <div className="text-sm">
           <p className="font-medium text-navy-700 dark:text-white">
-            Level {provider.kycLevel}
+            Level {record.kycLevel}
           </p>
           <span
             className={`mt-1 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(
-              provider.kycStatus
+              record.kycStatus
             )}`}
           >
-            {getStatusIcon(provider.kycStatus)}
-            {provider.kycStatus}
+            {getStatusIcon(record.kycStatus)}
+            {record.kycStatus}
           </span>
         </div>
       </td>
       <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          {provider.createdAt}
+          {record.createdAt}
         </p>
       </td>
       <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
         <button
-          onClick={() => handleViewKYC(provider)}
+          onClick={() => handleViewKYC(record)}
           className="inline-flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-600"
         >
-          Review KYC
+          Review {entityType === "users" ? "NIN" : "KYC"}
         </button>
       </td>
     </tr>
@@ -223,14 +246,32 @@ const KYCList = () => {
         <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-brand-400 to-brand-600">
           <MdFactCheck className="h-6 w-6 text-white" />
         </div>
+        KYC & Verification
       </h3>
+
       <Card extra="w-full h-full sm:overflow-auto px-2 py-4">
+        <div className="mb-6 flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700">
+          {Object.entries(entityConfig).map(([key, config]) => (
+            <button
+              key={key}
+              onClick={() => handleEntityChange(key)}
+              className={`px-4 pb-3 font-medium transition-all ${
+                entityType === key
+                  ? "border-b-2 border-brand-500 text-brand-500"
+                  : "text-gray-600 dark:text-gray-400"
+              }`}
+            >
+              {config.label}
+            </button>
+          ))}
+        </div>
+
         {loading && (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-brand-200 border-t-brand-500"></div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Loading providers...
+                Loading {currentEntity.label.toLowerCase()}...
               </p>
             </div>
           </div>
@@ -239,15 +280,14 @@ const KYCList = () => {
         {error && (
           <div className="rounded-lg bg-red-50 p-4 dark:bg-red-900/30">
             <p className="text-sm text-red-700 dark:text-red-400">
-              Error loading providers: {error}
+              Error loading {currentEntity.label.toLowerCase()}: {error}
             </p>
           </div>
         )}
 
         {!loading && !error && (
           <>
-            {/* Tabs */}
-            <div className="mb-6 flex gap-2 border-b border-gray-200 dark:border-gray-700">
+            <div className="mb-6 flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => handleTabChange("all")}
                 className={`px-4 pb-3 font-medium transition-all ${
@@ -256,7 +296,7 @@ const KYCList = () => {
                     : "text-gray-600 dark:text-gray-400"
                 }`}
               >
-                All ({allProviders.length})
+                All ({records.length})
               </button>
               <button
                 onClick={() => handleTabChange("pending")}
@@ -267,10 +307,7 @@ const KYCList = () => {
                 }`}
               >
                 Pending Review (
-                {
-                  allProviders.filter((p) => p.kycCompleted && !p.kycVerified)
-                    .length
-                }
+                {records.filter((p) => p.kycCompleted && !p.kycVerified).length}
                 )
               </button>
               <button
@@ -281,7 +318,7 @@ const KYCList = () => {
                     : "text-gray-600 dark:text-gray-400"
                 }`}
               >
-                Verified ({allProviders.filter((p) => p.kycVerified).length})
+                Verified ({records.filter((p) => p.kycVerified).length})
               </button>
               <button
                 onClick={() => handleTabChange("incomplete")}
@@ -291,8 +328,7 @@ const KYCList = () => {
                     : "text-gray-600 dark:text-gray-400"
                 }`}
               >
-                Incomplete ({allProviders.filter((p) => !p.kycCompleted).length}
-                )
+                Incomplete ({records.filter((p) => !p.kycCompleted).length})
               </button>
             </div>
 
@@ -302,7 +338,7 @@ const KYCList = () => {
                   <tr className="bg-gradient-to-r from-brand-50 to-blue-50 dark:from-brand-900/30 dark:to-blue-900/30">
                     <th className="border-b border-gray-200 px-4 py-4 text-left dark:border-gray-700">
                       <p className="text-sm font-bold text-navy-700 dark:text-white">
-                        Provider
+                        {entityType === "users" ? "User" : "Provider"}
                       </p>
                     </th>
                     <th className="border-b border-gray-200 px-4 py-4 text-left dark:border-gray-700">
@@ -329,14 +365,14 @@ const KYCList = () => {
                 </thead>
                 <tbody>
                   {displayData.length > 0 ? (
-                    pageData.map((provider) => (
-                      <TableRow key={provider.id} provider={provider} />
+                    displayData.map((record) => (
+                      <TableRow key={record.id} record={record} />
                     ))
                   ) : (
                     <tr>
                       <td colSpan="5" className="py-8 text-center">
                         <p className="text-gray-600 dark:text-gray-400">
-                          No providers found
+                          No {currentEntity.label.toLowerCase()} found
                         </p>
                       </td>
                     </tr>
@@ -360,7 +396,7 @@ const KYCList = () => {
                   <span className="font-medium text-navy-700 dark:text-white">
                     {totalItems > 0 ? totalItems : "many"}
                   </span>{" "}
-                  providers
+                  {currentEntity.label.toLowerCase()}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
@@ -395,4 +431,3 @@ const KYCList = () => {
 };
 
 export default KYCList;
-

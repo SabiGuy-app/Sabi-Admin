@@ -217,6 +217,10 @@ export const kycAPI = {
   verifyProviderKYC: (providerId) =>
     apiPatch(`/admin/providers/${providerId}/kyc/verify`),
 
+  // Verify KYC for a service user/buyer
+  verifyBuyerKYC: (buyerId) =>
+    apiPatch(`/admin/buyers/${buyerId}/kyc/verify`),
+
   // Reject KYC for a provider
   rejectProviderKYC: (providerId, reason) =>
     apiPatch(`/admin/providers/${providerId}/kyc/dispute`, { reason }),
