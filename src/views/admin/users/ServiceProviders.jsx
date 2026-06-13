@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "components/card";
-import avatar  from "assets/img/avatars/avatar.png"
+import avatar from "assets/img/avatars/avatar.png";
 import { MdModeEditOutline, MdAccountCircle } from "react-icons/md";
 import { userAPI } from "services/api";
 
 const ServiceProviders = () => {
   const navigate = useNavigate();
   const [serviceProviders, setServiceProviders] = useState([]);
+  const [activeTab, setActiveTab] = useState("providers");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -15,70 +16,125 @@ const ServiceProviders = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [hasNext, setHasNext] = useState(false);
 
+  const formatDate = (value) => {
+    if (!value) return "N/A";
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime())
+      ? "N/A"
+      : parsed.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+  };
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const data = await userAPI.getServiceProviders(
-          currentPage,
-          itemsPerPage
-        );
-
-        // Filter only service providers (role === "provider")
+        const fetcher =
+          activeTab === "online"
+            ? userAPI.getOnlineProviders
+            : userAPI.getServiceProviders;
+        const data = await fetcher(currentPage, itemsPerPage);
         const list = data?.data || data || [];
-        const filteredUsers = list
-          .filter((user) => user.role === "provider")
-          .map((user, index) => ({
-            id: user._id,
-            name: user.fullName || "N/A",
-            email: user.email,
-            role: "Service Provider",
-            status: user.emailVerified ? "Active" : "Pending",
-            dateJoined: new Date(user.createdAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            }),
-            avatar:
-              user.profilePicture || avatar,
-            phone: user.phoneNumber,
-            city: user.city,
-            address: user.address,
-            gender: user.gender,
-            accountType: user.accountType,
-            allowAnywhere: user.allowAnywhere,
-            accountNumber: user.accountNumber,
-            bankCode: user.bankCode,
-            bankName: user.bankName,
-            accountName: user.accountName,
-            driverLicenseNumber: user.driverLicenseNumber,
-            vehicleName: user.vehicleName,
-            vehicleColor: user.vehicleColor,
-            vehicleRegNo: user.vehicleRegNo,
-            ninSlip: user.ninSlip,
-            emailVerified: user.emailVerified,
-            isGoogleUser: user.isGoogleUser,
-            googleId: user.googleId,
-            files: user.files,
-            currentLocation: user.currentLocation,
-            availability: user.availability,
-            rating: user.rating,
-            completedJobs: user.completedJobs,
-            service: user.service,
-            job: user.job,
-            workVisuals: user.workVisuals,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            refreshTokenExpiresAt: user.refreshTokenExpiresAt,
-            notificationPreferences: user.notificationPreferences,
-            kycCompleted: user.kycCompleted,
-            kycLevel: user.kycLevel,
-            kycVerified: user.kycVerified,
-            totalBookings: user.bookingsCount || 0,
 
-          }));
+        const mappedUsers =
+          activeTab === "online"
+            ? list.map((user) => ({
+                id: user._id,
+                name: user.fullName || "N/A",
+                email: user.email,
+                role: "Online Provider",
+                status: user.online ? "Online" : "Offline",
+                dateJoined: formatDate(user.lastLocationUpdate || user.createdAt),
+                avatar: user.profilePicture || avatar,
+                phone: user.phoneNumber,
+                city: user.city,
+                address: user.address || user.currentLocation?.address,
+                gender: user.gender,
+                accountType: user.accountType,
+                allowAnywhere: user.allowAnywhere,
+                accountNumber: user.accountNumber,
+                bankCode: user.bankCode,
+                bankName: user.bankName,
+                accountName: user.accountName,
+                driverLicenseNumber: user.driverLicenseNumber,
+                vehicleName: user.vehicleName,
+                vehicleColor: user.vehicleColor,
+                vehicleRegNo: user.vehicleRegNo,
+                ninSlip: user.ninSlip,
+                emailVerified: user.emailVerified,
+                isGoogleUser: user.isGoogleUser,
+                googleId: user.googleId,
+                files: user.files,
+                currentLocation: user.currentLocation,
+                availability: user.availability,
+                rating: user.rating,
+                completedJobs: user.completedJobs,
+                service: user.service,
+                job: user.job,
+                workVisuals: user.workVisuals,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+                refreshTokenExpiresAt: user.refreshTokenExpiresAt,
+                notificationPreferences: user.notificationPreferences,
+                kycCompleted: user.kycCompleted,
+                kycLevel: user.kycLevel,
+                kycVerified: user.kycVerified,
+                totalBookings: user.completedJobs || 0,
+                lastLocationUpdate: user.lastLocationUpdate,
+                online: user.online,
+                locationFresh: user.locationFresh,
+                locationAgeMinutes: user.locationAgeMinutes,
+              }))
+            : list
+                .filter((user) => user.role === "provider")
+                .map((user) => ({
+                  id: user._id,
+                  name: user.fullName || "N/A",
+                  email: user.email,
+                  role: "Service Provider",
+                  status: user.emailVerified ? "Active" : "Pending",
+                  dateJoined: formatDate(user.createdAt),
+                  avatar: user.profilePicture || avatar,
+                  phone: user.phoneNumber,
+                  city: user.city,
+                  address: user.address,
+                  gender: user.gender,
+                  accountType: user.accountType,
+                  allowAnywhere: user.allowAnywhere,
+                  accountNumber: user.accountNumber,
+                  bankCode: user.bankCode,
+                  bankName: user.bankName,
+                  accountName: user.accountName,
+                  driverLicenseNumber: user.driverLicenseNumber,
+                  vehicleName: user.vehicleName,
+                  vehicleColor: user.vehicleColor,
+                  vehicleRegNo: user.vehicleRegNo,
+                  ninSlip: user.ninSlip,
+                  emailVerified: user.emailVerified,
+                  isGoogleUser: user.isGoogleUser,
+                  googleId: user.googleId,
+                  files: user.files,
+                  currentLocation: user.currentLocation,
+                  availability: user.availability,
+                  rating: user.rating,
+                  completedJobs: user.completedJobs,
+                  service: user.service,
+                  job: user.job,
+                  workVisuals: user.workVisuals,
+                  createdAt: user.createdAt,
+                  updatedAt: user.updatedAt,
+                  refreshTokenExpiresAt: user.refreshTokenExpiresAt,
+                  notificationPreferences: user.notificationPreferences,
+                  kycCompleted: user.kycCompleted,
+                  kycLevel: user.kycLevel,
+                  kycVerified: user.kycVerified,
+                  totalBookings: user.bookingsCount || 0,
+                }));
 
-        setServiceProviders(filteredUsers);
+        setServiceProviders(mappedUsers);
         const meta = data?.pagination || data?.meta || {};
         const totalItems =
           meta?.totalItems ??
@@ -111,15 +167,18 @@ const ServiceProviders = () => {
     };
 
     fetchUsers();
-  }, [currentPage]);
+  }, [activeTab, currentPage]);
 
   const getStatusColor = (status) => {
     switch (status) {
       case "Active":
+      case "Online":
         return "bg-green-100 text-green-700";
       case "Inactive":
+      case "Offline":
         return "bg-red-100 text-red-700";
       case "Pending":
+      case "Unavailable":
         return "bg-orange-100 text-orange-700";
       default:
         return "bg-gray-100 text-gray-700";
@@ -148,8 +207,19 @@ const ServiceProviders = () => {
       .join(" ");
   };
 
+  const formatCoordinates = (coordinates) => {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return "N/A";
+    const [lng, lat] = coordinates;
+    return `${lat}, ${lng}`;
+  };
+
   const handleViewDetails = (user) => {
     navigate(`/admin/user-details/${user.id}`, { state: { user } });
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
   };
 
   const TableRow = ({ user }) => (
@@ -192,6 +262,36 @@ const ServiceProviders = () => {
           {user.totalBookings}
         </p>
       </td>
+      {activeTab === "online" && (
+        <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
+          <div className="max-w-xs">
+            <p className="text-sm font-medium text-navy-700 dark:text-white">
+              {user.currentLocation?.address || "N/A"}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Coordinates: {formatCoordinates(user.currentLocation?.coordinates)}
+            </p>
+          </div>
+        </td>
+      )}
+      {activeTab === "online" && (
+        <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
+          <div className="max-w-xs">
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+                user.availability?.isAvailable
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {user.availability?.isAvailable ? "Available" : "Unavailable"}
+            </span>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Updated: {formatDate(user.availability?.lastUpdated)}
+            </p>
+          </div>
+        </td>
+      )}
       <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {user.dateJoined}
@@ -215,6 +315,7 @@ const ServiceProviders = () => {
         <div className="mt-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-brand-400 to-brand-600">
           <MdAccountCircle className="h-6 w-6 text-white" />
         </div>
+        <span>{activeTab === "online" ? "Online Providers" : "Service Providers"}</span>
       </h3>
       <Card extra="w-full h-full sm:overflow-auto px-2 py-4">
         {loading && (
@@ -222,7 +323,7 @@ const ServiceProviders = () => {
             <div className="text-center">
               <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-green-500"></div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Loading service providers...
+                Loading {activeTab === "online" ? "online providers" : "service providers"}...
               </p>
             </div>
           </div>
@@ -231,13 +332,36 @@ const ServiceProviders = () => {
         {error && (
           <div className="rounded-lg bg-red-50 p-4 dark:bg-red-900/30">
             <p className="text-sm text-red-700 dark:text-red-400">
-              Error loading service providers: {error}
+              Error loading {activeTab === "online" ? "online providers" : "service providers"}: {error}
             </p>
           </div>
         )}
 
         {!loading && !error && (
           <>
+            <div className="mb-6 flex gap-2 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => handleTabChange("providers")}
+                className={`px-4 pb-3 font-medium transition-all ${
+                  activeTab === "providers"
+                    ? "border-b-2 border-brand-500 text-brand-500"
+                    : "text-gray-600 dark:text-gray-400"
+                }`}
+              >
+                Service Providers
+              </button>
+              <button
+                onClick={() => handleTabChange("online")}
+                className={`px-4 pb-3 font-medium transition-all ${
+                  activeTab === "online"
+                    ? "border-b-2 border-brand-500 text-brand-500"
+                    : "text-gray-600 dark:text-gray-400"
+                }`}
+              >
+                Online Providers
+              </button>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -262,6 +386,20 @@ const ServiceProviders = () => {
                         Status
                       </p>
                     </th>
+                    {activeTab === "online" && (
+                      <th className="border-b border-gray-200 px-4 py-4 text-left dark:border-gray-700">
+                        <p className="text-sm font-bold text-navy-700 dark:text-white">
+                          Location
+                        </p>
+                      </th>
+                    )}
+                    {activeTab === "online" && (
+                      <th className="border-b border-gray-200 px-4 py-4 text-left dark:border-gray-700">
+                        <p className="text-sm font-bold text-navy-700 dark:text-white">
+                          Availability
+                        </p>
+                      </th>
+                    )}
                     <th className="border-b border-gray-200 px-4 py-4 text-left dark:border-gray-700">
                       <p className="text-sm font-bold text-navy-700 dark:text-white">
                         Bookings
@@ -269,7 +407,7 @@ const ServiceProviders = () => {
                     </th>
                     <th className="border-b border-gray-200 px-4 py-4 text-left dark:border-gray-700">
                       <p className="text-sm font-bold text-navy-700 dark:text-white">
-                        Date Joined
+                        {activeTab === "online" ? "Last Location Update" : "Date Joined"}
                       </p>
                     </th>
                     <th className="border-b border-gray-200 px-4 py-4 text-left dark:border-gray-700">
@@ -286,9 +424,9 @@ const ServiceProviders = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="py-8 text-center">
+                      <td colSpan={activeTab === "online" ? 9 : 7} className="py-8 text-center">
                         <p className="text-gray-600 dark:text-gray-400">
-                          No service providers found
+                          No {activeTab === "online" ? "online providers" : "service providers"} found
                         </p>
                       </td>
                     </tr>
@@ -316,7 +454,7 @@ const ServiceProviders = () => {
                   <span className="font-medium text-navy-700 dark:text-white">
                     {totalPages > 0 ? totalPages * itemsPerPage : "many"}
                   </span>{" "}
-                  users
+                  {activeTab === "online" ? "providers" : "users"}
                 </p>
                 <div className="flex items-center gap-2">
                   <button

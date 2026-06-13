@@ -142,6 +142,10 @@ export const userAPI = {
   getServiceProviders: (page = 1, limit = 10) =>
     apiGet(`/users/providers?page=${page}&limit=${limit}`),
 
+  // Get all online providers
+  getOnlineProviders: (page = 1, limit = 10) =>
+    apiGet(`/admin/online-providers?page=${page}&limit=${limit}`),
+
   // Get all service users (buyers)
   getServiceUsers: (page = 1, limit = 10) =>
     apiGet(`/users/buyers?page=${page}&limit=${limit}`),

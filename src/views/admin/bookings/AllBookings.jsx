@@ -34,6 +34,24 @@ const AllBookings = () => {
       .join(" ");
   };
 
+  const formatDateTime = (value) => {
+    if (!value) return "N/A";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const formatValueWithUnit = (value) => {
+    if (value?.value === undefined || value?.value === null) return "N/A";
+    return `${value.value} ${value.unit || ""}`.trim();
+  };
+
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -47,32 +65,27 @@ const AllBookings = () => {
 
         // Map API response to our table format
         const list = data?.data || data || [];
-        const mappedBookings = list.map((booking) => ({
-          id: booking._id,
-          userId: booking.userId._id,
-          userName: booking.userId.fullName || "N/A",
-          userEmail: booking.userId.email,
-          userPhone: booking.userId.phoneNumber,
-          serviceType: booking.serviceType,
-          subCategory: booking.subCategory,
-          pickupLocation: booking.pickupLocation.address,
-          dropoffLocation: booking.dropoffLocation.address,
-          distance: `${booking.distance.value} ${booking.distance.unit}`,
-          duration: `${booking.estimatedDuration.value} ${booking.estimatedDuration.unit}`,
-          agreedPrice: booking.agreedPrice,
-          calculatedPrice: booking.calculatedPrice,
-          status: booking.status,
-          providerResponse: booking.providerResponse,
-          modeOfDelivery: booking.modeOfDelivery,
-          createdAt: new Date(booking.createdAt).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          providerId: booking.providerId?._id || null,
-          providerName: booking.providerId?.fullName || "N/A",
+        const bookingList = Array.isArray(list) ? list : [];
+        const mappedBookings = bookingList.map((booking) => ({
+          id: booking?._id || booking?.id || null,
+          userId: booking?.userId?._id || booking?.userId || null,
+          userName: booking?.userId?.fullName || "N/A",
+          userEmail: booking?.userId?.email || "N/A",
+          userPhone: booking?.userId?.phoneNumber || "N/A",
+          serviceType: booking?.serviceType,
+          subCategory: booking?.subCategory,
+          pickupLocation: booking?.pickupLocation?.address || "N/A",
+          dropoffLocation: booking?.dropoffLocation?.address || "N/A",
+          distance: formatValueWithUnit(booking?.distance),
+          duration: formatValueWithUnit(booking?.estimatedDuration),
+          agreedPrice: booking?.agreedPrice,
+          calculatedPrice: booking?.calculatedPrice,
+          status: booking?.status,
+          providerResponse: booking?.providerResponse,
+          modeOfDelivery: booking?.modeOfDelivery || "N/A",
+          createdAt: formatDateTime(booking?.createdAt),
+          providerId: booking?.providerId?._id || booking?.providerId || null,
+          providerName: booking?.providerId?.fullName || "N/A",
           rawData: booking,
         }));
 
@@ -95,10 +108,10 @@ const AllBookings = () => {
         setHasNext(
           computedTotalPages > 0
             ? currentPage < computedTotalPages
-            : list.length === itemsPerPage
+            : bookingList.length === itemsPerPage
         );
         setPaginationMeta({
-          total: meta?.total ?? totalItems ?? list.length,
+          total: meta?.total ?? totalItems ?? bookingList.length,
           totalPages: meta?.totalPages ?? computedTotalPages,
           currentPage: meta?.currentPage ?? currentPage,
           perPage: meta?.perPage ?? itemsPerPage,
@@ -202,7 +215,7 @@ const AllBookings = () => {
             booking.status
           )}`}
         >
-          {booking.status.replace(/_/g, " ")}
+          {toTitleCase(booking.status)}
         </span>
       </td>
       <td className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
@@ -374,8 +387,11 @@ const AllBookings = () => {
                 </thead>
                 <tbody>
                   {allBookings.length > 0 ? (
-                    allBookings.map((booking) => (
-                      <TableRow key={booking.id} booking={booking} />
+                    allBookings.map((booking, index) => (
+                      <TableRow
+                        key={booking.id || `${booking.createdAt}-${index}`}
+                        booking={booking}
+                      />
                     ))
                   ) : (
                     <tr>
