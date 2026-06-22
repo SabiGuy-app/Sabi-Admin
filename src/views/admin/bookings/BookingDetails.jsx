@@ -23,12 +23,12 @@ const BookingDetails = () => {
   const [booking, setBooking] = useState(location.state?.booking || null);
   const [loading, setLoading] = useState(!location.state?.booking);
   const [error, setError] = useState(null);
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = React.useRef(null);
 
   useEffect(() => {
     const fetchBooking = async () => {
-      if (location.state?.booking) {
-        return;
-      }
+      if (location.state?.booking) return;
 
       try {
         setLoading(true);
@@ -97,9 +97,13 @@ const BookingDetails = () => {
   const provider = booking?.providerId || {};
   const pickup = booking?.pickupLocation || {};
   const dropoff = booking?.dropoffLocation || {};
-  const pricingBreakdown = booking?.pricingBreakdown || booking?.pricing?.breakdown || {};
-  // const breakdown = booking?.pricing?.breakdown || booking?.pricingBreakdown || {};
-  const meta = booking?.pricing?.meta || booking?.pricingMeta || {};
+  const pricing = booking?.pricing || {};
+  const fare = pricing?.fare || {};
+  const fees = pricing?.fees || {};
+  const promo = pricing?.promo || booking?.payment?.discount || {};
+  const tax = pricing?.tax || {};
+  const totals = pricing?.totals || {};
+  const meta = pricing?.meta || booking?.pricingMeta || {};
   const payment = booking?.payment || {};
   const providerDistances = Array.isArray(booking?.providerDistances)
     ? booking.providerDistances
@@ -122,12 +126,37 @@ const BookingDetails = () => {
     return `https://www.google.com/maps?q=${lat},${lng}`;
   };
 
-  const pickupMapLink = mapLinkFromCoordinates(
-    pickup?.coordinates?.coordinates
-  );
-  const dropoffMapLink = mapLinkFromCoordinates(
-    dropoff?.coordinates?.coordinates
-  );
+  const pickupMapLink = mapLinkFromCoordinates(pickup?.coordinates?.coordinates);
+  const dropoffMapLink = mapLinkFromCoordinates(dropoff?.coordinates?.coordinates);
+
+   const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, 2200);
+  };
+
+  const handleDeleteBooking = async () => {
+    if (!window.confirm("Are you sure you want to delete this booking? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await bookingsAPI.deleteBooking(id);
+      showToast("Booking deleted successfully.");
+     setTimeout(() => {
+    navigate(-1);
+     }, 2000);
+    } catch (err) {
+      showToast(`Failed to delete booking: ${err.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const DetailRow = ({ label, value }) => (
     <div className="flex flex-col gap-1 rounded-lg bg-gray-50 p-3 dark:bg-gray-800/50 sm:flex-row sm:items-start sm:justify-between">
@@ -195,6 +224,19 @@ const BookingDetails = () => {
 
   return (
     <div className="mx-auto w-full max-w-7xl p-2">
+       {toast && (
+        <div className="fixed right-6 top-6 z-50">
+          <div
+            className={`rounded-lg px-4 py-3 text-sm font-medium shadow-lg ${
+              toast.type === "error"
+                ? "bg-red-600 text-white"
+                : "bg-green-600 text-white"
+            }`}
+          >
+            {toast.message}
+          </div>
+        </div>
+      )}
       <div className="mb-6 flex items-center justify-between gap-3">
         <button
           onClick={() => navigate(-1)}
@@ -232,9 +274,23 @@ const BookingDetails = () => {
                 <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium">
                   {toTitleCase(booking?.scheduleType)}
                 </span>
+                <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium">
+                  {toTitleCase(booking?.providerResponse)}
+                </span>
               </div>
+              <div className ="mb-4 mt-6 flex items-center gap-3 md:mb-0">
+            <button
+              onClick={handleDeleteBooking}
+              className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-600"
+            >
+              <MdCheckCircle className="h-4 w-4" />
+              Delete Booking
+            </button>
+            </div>
             </div>
           </div>
+          
+
           <div className="rounded-xl bg-white/15 px-4 py-3 text-sm font-medium">
             <div className="mb-1 text-xs opacity-80">Created</div>
             {formatDateTime(booking?.createdAt)}
@@ -252,10 +308,7 @@ const BookingDetails = () => {
           <div className="space-y-3 text-sm">
             <DetailRow label="Name" value={customer?.fullName || "Not available"} />
             <DetailRow label="Email" value={customer?.email || "Not available"} />
-            <DetailRow
-              label="Phone"
-              value={customer?.phoneNumber || "Not available"}
-            />
+            <DetailRow label="Phone" value={customer?.phoneNumber || "Not available"} />
             <DetailRow label="User ID" value={customer?._id || "Not available"} />
           </div>
         </Card>
@@ -268,13 +321,14 @@ const BookingDetails = () => {
           />
           <div className="space-y-3 text-sm">
             <DetailRow label="Pickup" value={pickup?.address || "Not available"} />
-            <DetailRow
-              label="Dropoff"
-              value={dropoff?.address || "Not available"}
-            />
+            <DetailRow label="Dropoff" value={dropoff?.address || "Not available"} />
             <DetailRow
               label="Distance"
               value={formatNumber(booking?.distance?.value, booking?.distance?.unit)}
+            />
+            <DetailRow
+              label="Provider ETA"
+              value={formatNumber(booking?.providerETA?.value, booking?.providerETA?.unit)}
             />
             <DetailRow
               label="Estimated Duration"
@@ -323,20 +377,11 @@ const BookingDetails = () => {
           />
           <div className="space-y-3 text-sm">
             <DetailRow
-              label="Provider ETA"
-              value={formatNumber(
-                booking?.providerETA?.value,
-                booking?.providerETA?.unit
-              )}
-            />
-            <DetailRow
               label="Estimated Arrival"
               value={formatDateTime(booking?.estimatedArrivalAt)}
             />
-            <DetailRow
-              label="Accepted At"
-              value={formatDateTime(booking?.acceptedAt)}
-            />
+            <DetailRow label="Selected At" value={formatDateTime(booking?.selectedAt)} />
+            <DetailRow label="Accepted At" value={formatDateTime(booking?.acceptedAt)} />
             <DetailRow
               label="Estimated Completion"
               value={formatDateTime(booking?.estimatedCompletionAt)}
@@ -355,64 +400,68 @@ const BookingDetails = () => {
           <SectionTitle
             icon={MdPayments}
             title="Pricing"
-            subtitle="Final rider and driver amounts"
+            subtitle="Fare, taxes, promo, and payout summary"
           />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <DetailRow
-              label="Base Fare"
-              value={formatCurrency(pricingBreakdown?.baseFare)}
-            />
-            <DetailRow
-              label="Distance Cost"
-              value={formatCurrency(pricingBreakdown?.distanceCost)}
-            />
-            <DetailRow
-              label="Time Cost"
-              value={formatCurrency(pricingBreakdown?.timeCost)}
-            />
+            <DetailRow label="Base Fare" value={formatCurrency(fare?.baseFare)} />
+            <DetailRow label="Distance Cost" value={formatCurrency(fare?.distanceCost)} />
+            <DetailRow label="Time Cost" value={formatCurrency(fare?.timeCost)} />
             <DetailRow
               label="Market Adjustment"
-              value={formatCurrency(pricingBreakdown?.marketAdjustment)}
+              value={formatCurrency(fare?.marketAdjustment)}
             />
+            <DetailRow label="Subtotal" value={formatCurrency(fare?.subtotal)} />
             <DetailRow
-              label="Subtotal"
-              value={formatCurrency(pricingBreakdown?.subtotal)}
-            />
-            <DetailRow
-              label="Platform Fee"
-              value={formatCurrency(pricingBreakdown?.platformFee)}
-            />
-            <DetailRow
-              label="Surge Multiplier"
-              value={formatNumber(pricingBreakdown?.surgeMultiplier)}
-            />
-            <DetailRow
-              label="Pre-Surge Fare"
-              value={formatCurrency(pricingBreakdown?.preSurgeFare)}
-            />
-            <DetailRow
-              label="Rider Pays Before Tax"
-              value={formatCurrency(pricingBreakdown?.riderPaysBeforeTax)}
-            />
-            <DetailRow
-              label="Tax"
-              value={formatCurrency(pricingBreakdown?.tax)}
-            />
-            <DetailRow
-              label="Rider Pays Final"
-              value={formatCurrency(pricingBreakdown?.riderPaysFinal)}
+              label="User Platform Fee"
+              value={formatCurrency(fees?.userPlatformFee)}
             />
             <DetailRow
               label="Driver Commission"
-              value={formatCurrency(pricingBreakdown?.driverCommission)}
+              value={formatCurrency(fees?.driverCommission)}
+            />
+            <DetailRow
+              label="Provider Platform Fee"
+              value={formatCurrency(fees?.providerPlatformFee)}
+            />
+            <DetailRow
+              label="Total Platform Fee"
+              value={formatCurrency(fees?.totalPlatformFee)}
+            />
+            <DetailRow label="Platform Earns" value={formatCurrency(fees?.platformEarns)} />
+            <DetailRow label="Tax Amount" value={formatCurrency(tax?.amount)} />
+            <DetailRow label="Tax Rate" value={formatNumber(tax?.rate, "%")} />
+            <DetailRow
+              label="Before Discount"
+              value={formatCurrency(totals?.beforeDiscount)}
+            />
+            <DetailRow
+              label="Discount Amount"
+              value={formatCurrency(totals?.discountAmount)}
+            />
+            <DetailRow
+              label="After Discount"
+              value={formatCurrency(totals?.afterDiscount)}
+            />
+            <DetailRow
+              label="Rider Pays Final"
+              value={formatCurrency(totals?.riderPaysFinal)}
             />
             <DetailRow
               label="Driver Receives"
-              value={formatCurrency(pricingBreakdown?.driverReceives)}
+              value={formatCurrency(booking?.driverReceives ?? fees?.driverReceives)}
             />
             <DetailRow
-              label="Platform Earns"
-              value={formatCurrency(pricingBreakdown?.platformEarns)}
+              label="Provider Receives"
+              value={formatCurrency(booking?.providerReceives ?? fees?.providerReceives)}
+            />
+            <DetailRow label="Agreed Price" value={formatCurrency(booking?.agreedPrice)} />
+            <DetailRow
+              label="Calculated Price"
+              value={formatCurrency(booking?.calculatedPrice)}
+            />
+            <DetailRow
+              label="Promo Applied"
+              value={(pricing?.promoApplied || promo?.applied) ? "Yes" : "No"}
             />
           </div>
         </Card>
@@ -421,26 +470,23 @@ const BookingDetails = () => {
           <SectionTitle
             icon={MdCheckCircle}
             title="Payment"
-            subtitle="Escrow and payout state"
+            subtitle="Discount and payout state"
           />
           <div className="space-y-3 text-sm">
             <DetailRow
-              label="Escrow Status"
-              value={toTitleCase(payment?.escrowStatus)}
+              label="Discount Applied"
+              value={promo?.applied ? "Yes" : "No"}
+            />
+            <DetailRow label="Promo Code" value={promo?.code || promo?.reason || "Not available"} />
+            <DetailRow label="Promo Amount" value={formatCurrency(promo?.amount)} />
+            <DetailRow
+              label="Max Discount"
+              value={formatCurrency(promo?.maxDiscount)}
             />
             <DetailRow
-              label="Escrow Amount"
-              value={formatCurrency(payment?.escrowAmount)}
+              label="Payment Discount"
+              value={formatCurrency(payment?.discount?.amount)}
             />
-            <DetailRow
-              label="Provider Receives"
-              value={formatCurrency(payment?.providerReceives)}
-            />
-            <DetailRow
-              label="Paystack Ref"
-              value={payment?.paystackRef || "Not available"}
-            />
-            <DetailRow label="Paid At" value={formatDateTime(payment?.paidAt)} />
           </div>
         </Card>
 
@@ -467,18 +513,9 @@ const BookingDetails = () => {
             </div>
           </div>
           <div className="space-y-3 text-sm">
-            <DetailRow
-              label="Name"
-              value={provider?.fullName || "Not available"}
-            />
-            <DetailRow
-              label="Email"
-              value={provider?.email || "Not available"}
-            />
-            <DetailRow
-              label="Provider ID"
-              value={provider?._id || "Not available"}
-            />
+            <DetailRow label="Name" value={provider?.fullName || "Not available"} />
+            <DetailRow label="Email" value={provider?.email || "Not available"} />
+            <DetailRow label="Provider ID" value={provider?._id || "Not available"} />
             <DetailRow
               label="Receives"
               value={formatCurrency(booking?.providerReceives)}
@@ -501,8 +538,6 @@ const BookingDetails = () => {
           </div>
         </Card>
 
-       
-
         <Card extra="w-full p-6 md:col-span-2 xl:col-span-3">
           <SectionTitle
             icon={MdInfo}
@@ -514,10 +549,7 @@ const BookingDetails = () => {
               label="Vehicle Category"
               value={toTitleCase(meta?.vehicleCategory)}
             />
-            <DetailRow
-              label="Distance Km"
-              value={formatNumber(meta?.distanceKm)}
-            />
+            <DetailRow label="Distance Km" value={formatNumber(meta?.distanceKm)} />
             <DetailRow
               label="Duration Minutes"
               value={formatNumber(meta?.durationMinutes)}
@@ -528,19 +560,24 @@ const BookingDetails = () => {
             />
             <DetailRow
               label="Per Km Rate"
-              value={formatCurrency(meta?.ratesUsed?.perKmRate)}
+              value={
+                typeof meta?.ratesUsed?.perKmRate === "string"
+                  ? meta?.ratesUsed?.perKmRate
+                  : formatCurrency(meta?.ratesUsed?.perKmRate)
+              }
             />
             <DetailRow
               label="Per Minute Rate"
               value={formatCurrency(meta?.ratesUsed?.perMinuteRate)}
             />
-            <DetailRow
-              label="Tax Rate"
-              value={formatNumber(meta?.ratesUsed?.taxRate, "%")}
-            />
+            <DetailRow label="Tax Rate" value={formatNumber(meta?.ratesUsed?.taxRate, "%")} />
             <DetailRow
               label="Fuel Price / Litre"
               value={formatCurrency(meta?.ratesUsed?.fuelPricePerLitre)}
+            />
+            <DetailRow
+              label="Minimum Fare"
+              value={formatCurrency(meta?.ratesUsed?.minimumFare)}
             />
           </div>
         </Card>
@@ -552,22 +589,10 @@ const BookingDetails = () => {
             subtitle="Suggested and notified providers"
           />
           <div className="space-y-3 text-sm">
-            <DetailRow
-              label="Notified Providers"
-              value={notifiedProviders.length}
-            />
-            <DetailRow
-              label="Suggested Providers"
-              value={suggestedProviders.length}
-            />
-            <DetailRow
-              label="Provider Distances"
-              value={providerDistances.length}
-            />
-            <DetailRow
-              label="Pricing Options"
-              value={providerPricingOptions.length}
-            />
+            <DetailRow label="Notified Providers" value={notifiedProviders.length} />
+            <DetailRow label="Suggested Providers" value={suggestedProviders.length} />
+            <DetailRow label="Provider Distances" value={providerDistances.length} />
+            <DetailRow label="Pricing Options" value={providerPricingOptions.length} />
           </div>
         </Card>
 
@@ -620,10 +645,7 @@ const BookingDetails = () => {
                     Provider: {item?.providerId || "Not available"}
                   </p>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                    <DetailRow
-                      label="Rider Pays"
-                      value={formatCurrency(item?.riderPays)}
-                    />
+                    <DetailRow label="Rider Pays" value={formatCurrency(item?.riderPays)} />
                     <DetailRow
                       label="Driver Receives"
                       value={formatCurrency(item?.driverReceives)}
@@ -658,8 +680,10 @@ const BookingDetails = () => {
             <DetailRow label="Selected At" value={formatDateTime(booking?.selectedAt)} />
             <DetailRow label="Updated At" value={formatDateTime(booking?.updatedAt)} />
             <DetailRow label="Accepted At" value={formatDateTime(booking?.acceptedAt)} />
-            <DetailRow label="Completed At" value={formatDateTime(booking?.completedAt) || "Booking not completed"} />
-
+            <DetailRow
+              label="Completed At"
+              value={formatDateTime(booking?.completedAt)}
+            />
           </div>
           {attachments.length > 0 ? (
             <div className="mt-4 space-y-3">
@@ -668,7 +692,9 @@ const BookingDetails = () => {
                   key={`${attachment}-${index}`}
                   className="rounded-lg border border-gray-100 p-3 text-sm dark:border-gray-700"
                 >
-                  {typeof attachment === "string" ? attachment : JSON.stringify(attachment)}
+                  {typeof attachment === "string"
+                    ? attachment
+                    : JSON.stringify(attachment)}
                 </div>
               ))}
             </div>
@@ -681,6 +707,7 @@ const BookingDetails = () => {
       </div>
     </div>
   );
+  
 };
 
 export default BookingDetails;

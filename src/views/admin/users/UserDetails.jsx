@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   MdArrowBack,
@@ -9,13 +9,20 @@ import {
   MdPhone,
   MdVerified,
   MdAssignment,
+  MdCheckCircle,
 } from "react-icons/md";
 import Card from "components/card";
+import {userAPI} from "services/api";
 
 const UserDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
+  const [loading, setLoading] = useState(!location.state?.user);
+ 
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = React.useRef(null);
+  
 
   const user = location.state?.user || null;
   const isProvider =
@@ -63,6 +70,36 @@ const UserDetails = () => {
       ? `${locationLat.toFixed(5)}, ${locationLng.toFixed(5)}`
       : "Not available";
 
+      const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, 2200);
+  };
+const userType = isProvider ? "provider" : "buyer";
+
+
+  const handleDeactivateUser = async () => {
+    if (!window.confirm("Are you sure you want to deactivate this user? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      setLoading(true);
+      await userAPI.deactivateUser(id, userType);
+      showToast("User deactivated successfully.");
+      setTimeout(() => {
+        navigate(-1);
+      }, 2000);
+    } catch (error) {
+      showToast(`Failed to deactivate user: ${error.message}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="mx-auto max-w-3xl p-4">
@@ -88,6 +125,29 @@ const UserDetails = () => {
 
   return (
     <div className="mx-auto w-full max-w-6xl p-2">
+       {toast && (
+        <div className="fixed right-6 top-6 z-50">
+          <div
+            className={`rounded-lg px-4 py-3 text-sm font-medium shadow-lg ${
+              toast.type === "error"
+                ? "bg-red-600 text-white"
+                : "bg-green-600 text-white"
+            }`}
+          >
+            {toast.message}
+             </div>
+        </div>
+      )}
+      {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-brand-200 border-t-brand-500"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Loading details...
+              </p>
+            </div>
+          </div>
+        )}
       <div className="mb-6 flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
@@ -111,6 +171,7 @@ const UserDetails = () => {
               {user.name?.[0] || "U"}
             </div>
           )}
+                       
           <div className="flex-1">
             <h2 className="text-2xl font-bold">{user.name}</h2>
             <p className="mt-1 text-sm text-white/80">{user.email}</p>
@@ -152,6 +213,7 @@ const UserDetails = () => {
               <span>{user.phone || "No phone provided"}</span>
             </div>
           </div>
+          
         </Card>
 
         <Card extra="w-full p-6">
@@ -177,6 +239,15 @@ const UserDetails = () => {
               <span>Joined: {user.dateJoined || "Not available"}</span>
             </div>
           </div>
+          <div className ="mb-4 mt-6 flex items-center gap-3 md:mb-0">
+                        <button
+                          onClick={handleDeactivateUser}
+                          className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-600"
+                        >
+                          <MdCheckCircle className="h-4 w-4" />
+                          Deactivate User
+                        </button>
+                        </div>
         </Card>
 
         <Card extra="w-full p-6">

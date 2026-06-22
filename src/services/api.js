@@ -160,6 +160,7 @@ export const userAPI = {
   // Update user
   updateUser: (userId, data) => apiPut(`/users/${userId}`, data),
 
+  deactivateUser: (userId, userType) => apiPatch(`/admin/users/${userType}/${userId}/deactivate`),
   // Delete user
   deleteUser: (userId) => apiDelete(`/users/${userId}`),
 };
@@ -305,7 +306,10 @@ export const bookingsAPI = {
   updateBooking: (bookingId, data) => apiPut(`/bookings/${bookingId}`, data),
 
   // Cancel booking
-  cancelBooking: (bookingId) => apiDelete(`/bookings/${bookingId}`),
+  deleteBooking: (bookingId) => apiDelete(`/admin/${bookingId}/delete-booking`),
+
+
+
 };
 
 const apiService = {

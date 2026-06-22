@@ -31,7 +31,8 @@ const AllUsers = () => {
           name: user.fullName || "N/A",
           email: user.email,
           role: user.role === "buyer" ? "User" : "Provider",
-          status: user.emailVerified ? "Active" : "Pending",
+          email_status: user.emailVerified ? "Active" : "Pending",
+          status: user.isActive ? "Active" : "Inactive",
           dateJoined: new Date(user.createdAt).toLocaleDateString("en-US", {
             year: "numeric",
             month: "short",
